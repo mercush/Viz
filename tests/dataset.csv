@@ -1,0 +1,6 @@
+id,name,age,height,weight,email,city
+1,John Doe,28,175.5,70.2,john.doe@example.com,New York
+2,Jane Smith,32,162.0,58.5,jane.smith@example.com,Los Angeles
+3,Bob Johnson,45,180.3,85.7,bob.johnson@example.com,Chicago
+4,Alice Brown,29,165.8,62.1,alice.brown@example.com,Houston
+5,Charlie Wilson,38,172.4,78.3,charlie.wilson@example.com,Phoenix

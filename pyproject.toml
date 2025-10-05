@@ -1,0 +1,16 @@
+[project]
+name = "viz"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "genlm-backend",
+    "genlm-control",
+    "mlx>=0.29.2",
+    "mlx-lm>=0.28.2",
+]
+
+[tool.uv.sources]
+genlm-control = { path = "genlm-control" }
+genlm-backend = { path = "genlm-backend" }
