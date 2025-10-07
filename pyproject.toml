@@ -12,5 +12,5 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-genlm-control = { path = "genlm-control" }
 genlm-backend = { path = "genlm-backend" }
+genlm-control = { path = "genlm-control" }
