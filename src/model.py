@@ -6,7 +6,7 @@ import random
 import time
 from genlm.control import PromptedLLM, JsonSchema
 from prompts import system_prompt
-from Potential import VegaLiteSampler
+from sampler import VegaLiteSampler, PowerPotential
 import argparse
 import os
 import pandas as pd
@@ -20,7 +20,7 @@ async def run(prompt: str, dataset_url: str) -> None:
 Use the data URL: {dataset_url}
 The columns in the dataset are: {pd.read_csv(dataset_url).columns.tolist()}
 """
-    llm = PromptedLLM.from_name(MODEL_NAME, backend="mlx", temperature=0.25)
+    llm = PromptedLLM.from_name(MODEL_NAME, backend="mlx", temperature=1.0)
     llm.prompt_ids = llm.model.tokenizer.apply_chat_template(
         conversation=[
             {"role": "system", "content": system_prompt},
@@ -38,6 +38,7 @@ The columns in the dataset are: {pd.read_csv(dataset_url).columns.tolist()}
     with open("src/vegalite.schema.json") as f:
         schema = json.load(f)
     schema_potential = JsonSchema(schema, validate=False)
+    power_potential = PowerPotential(llm)
     coerced_schema = schema_potential.coerce(
         llm, f=lambda x: json_prefix_bytes + b"".join(x)
     )
@@ -48,6 +49,7 @@ The columns in the dataset are: {pd.read_csv(dataset_url).columns.tolist()}
         n_particles=2,
         max_tokens=250,
         ess_threshold=0.9,
+        critic=power_potential
     )
     elapsed_time = time.time() - start
     response: dict[tuple, float] = dict(sequences.decoded_posterior)

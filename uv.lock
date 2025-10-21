@@ -1021,6 +1021,8 @@ requires-dist = [
     { name = "mkdocs-material", marker = "extra == 'docs'" },
     { name = "mkdocs-section-index", marker = "extra == 'docs'" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'" },
+    { name = "mlx", marker = "extra == 'mlx'" },
+    { name = "mlx-lm", marker = "extra == 'mlx'" },
     { name = "numba" },
     { name = "protobuf" },
     { name = "sentencepiece" },
@@ -1029,7 +1031,7 @@ requires-dist = [
     { name = "triton", marker = "sys_platform == 'linux'", specifier = ">=3.2.0" },
     { name = "vllm", marker = "sys_platform == 'linux'", specifier = ">=0.6.6,<=0.10.0" },
 ]
-provides-extras = ["docs"]
+provides-extras = ["mlx", "docs"]
 
 [[package]]
 name = "genlm-control"
