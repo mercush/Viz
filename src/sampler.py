@@ -2,11 +2,13 @@ from genlm.control.sampler.token import TokenSampler
 from genlm.control import PromptedLLM
 from genlm.control import AWRS
 from genlm.control.potential.stateful import StatefulPotential
+from genlm.control.potential.base import Potential
+from genlm.control.util import fast_sample_lazyweights
 
 class VegaLiteSampler(TokenSampler):
     """Custom sampler for preventing proofs."""
 
-    def __init__(self, llm: PromptedLLM, potential):
+    def __init__(self, llm: Potential, potential):
         self.llm = llm
         self.potential = potential
         self.AWRS = AWRS(self.llm, self.potential)
@@ -20,18 +22,18 @@ class VegaLiteSampler(TokenSampler):
             return self.llm.eos, 0.0, 0.0
         return await self.AWRS.sample(context)
 
-class PowerPotential(StatefulPotential):
-    def __init__(self, llm: PromptedLLM, power: float = 4.0):
+class PowerSampler(Potential):
+    """Custom sampler for preventing proofs."""
+
+    def __init__(self, llm: PromptedLLM, power: float):
         self.llm = llm
-        assert self.llm.temperature == 1.0
         self.power = power
-        super().__init__(llm.vocab)
+        super().__init__(vocabulary=self.llm.vocab)
 
-    async def prefix(self, context):
-        """Score a prefix context using the state management system."""
-        log_weight = await self.llm.log_probability(context)
-        return (self.power - 1.0) * log_weight
-
-    async def complete(self, context):
-        """Score a complete context."""
-        return 0.0
+    async def sample(self, context, draw=None):
+        logws = await self.llm.logw_next(context)
+        logps = logws.normalize()
+        token = fast_sample_lazyweights(logps)
+        logps_base = (logws.weights * self.llm.temperature).normalize()
+        weight = logps_base[token] * self.power - logps[token]
+        return token, weight, logps[token]

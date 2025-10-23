@@ -6,7 +6,8 @@ import random
 import time
 from genlm.control import PromptedLLM, JsonSchema
 from prompts import system_prompt
-from sampler import VegaLiteSampler, PowerPotential
+from sampler import VegaLiteSampler
+from potential import PowerLLM
 import argparse
 import os
 import pandas as pd
@@ -15,12 +16,16 @@ MODEL_NAME = "mlx-community/Meta-Llama-3.1-8B-Instruct-4bit"
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 
-async def run(prompt: str, dataset_url: str) -> None:
+async def run(prompt: str, dataset_url: str, config: dict) -> None:
     prompt = f"""{prompt}
 Use the data URL: {dataset_url}
 The columns in the dataset are: {pd.read_csv(dataset_url).columns.tolist()}
 """
     llm = PromptedLLM.from_name(MODEL_NAME, backend="mlx", temperature=1.0)
+    if config["lhts"]:
+        potential = PowerLLM(llm, 4.0)
+    else:
+        potential = llm
     llm.prompt_ids = llm.model.tokenizer.apply_chat_template(
         conversation=[
             {"role": "system", "content": system_prompt},
@@ -38,18 +43,16 @@ The columns in the dataset are: {pd.read_csv(dataset_url).columns.tolist()}
     with open("src/vegalite.schema.json") as f:
         schema = json.load(f)
     schema_potential = JsonSchema(schema, validate=False)
-    power_potential = PowerPotential(llm)
     coerced_schema = schema_potential.coerce(
         llm, f=lambda x: json_prefix_bytes + b"".join(x)
     )
-    sampler = VegaLiteSampler(llm, coerced_schema)
+    sampler = VegaLiteSampler(potential, coerced_schema)
 
     start = time.time()
     sequences = await sampler.smc(
         n_particles=2,
         max_tokens=250,
-        ess_threshold=0.9,
-        critic=power_potential
+        ess_threshold=0.9
     )
     elapsed_time = time.time() - start
     response: dict[tuple, float] = dict(sequences.decoded_posterior)
@@ -103,7 +106,14 @@ if __name__ == "__main__":
         type=str,
         default="Make a scatter plot of age and height. Use the tests/dataset.csv dataset",
     )
+    parser.add_argument(
+        "--lhts",
+        action="store_true",
+    )
     parser.add_argument("--data", type=str, default="tests/dataset.csv")
     args = parser.parse_args()
-    asyncio.run(run(args.prompt, args.data))
+    config = {
+        "lhts": args.lhts
+    }
+    asyncio.run(run(args.prompt, args.data, config))
     # base(args.prompt, args.data)
